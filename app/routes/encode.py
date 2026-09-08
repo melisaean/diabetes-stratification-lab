@@ -15,7 +15,7 @@ router = APIRouter()
 
 
 @router.post("/encode", response_model=EncodeResponse)
-def encode_patient(record: EncodeRequest, state: AppState = None) -> dict:
+def encode_patient(record: EncodeRequest, state: AppState | None = None) -> dict:
     data = record.model_dump(exclude_none=True)
     df_raw = pd.DataFrame([data])
     X = state.artifacts.engineer.transform(df_raw)

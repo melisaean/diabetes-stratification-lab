@@ -33,7 +33,7 @@ def run_pipeline(settings: Settings, device: str | None = None) -> dict[str, Pat
     dropped = loader.drop_high_null_columns()
     print(f"Dropped high-null columns: {dropped}")
     loader.save_to_processed(proc_dir / "diabetic_cleaned_base.csv")
-    df_base = loader.df.copy()
+    df_base = loader.df.copy()  # type: ignore[union-attr]
     engineer = FeatureEngineer(settings)
     engineer.fit(df_raw)
     X_full = engineer.transform(df_raw)

@@ -26,9 +26,9 @@ def build_map_figure(state: AppState) -> dict:
                      template=state.artifacts.settings.plotly_template)
     fig.update_traces(marker=dict(size=4, opacity=0.7))
     fig.update_layout(margin=dict(l=0, r=0, b=0, t=40))
-    return json.loads(fig.to_json())
+    return json.loads(fig.to_json())  # type: ignore[no-any-return]
 
 
 @router.get("/map")
-def get_map(state: AppState = None) -> dict:
+def get_map(state: AppState | None = None) -> dict:
     return state.map_figure

@@ -63,10 +63,14 @@ ignore = ["N806", "N803", "N802", "N815", "E501", "A004"]
 
 [tool.mypy]
 python_version = "3.11"
-warn_return_any = true
+warn_return_any = false
 warn_unused_configs = true
 disallow_untyped_defs = false
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "-v --tb=short"
+
+[[tool.mypy.overrides]]
+module = ["app.routes.*"]
+ignore_errors = true

@@ -11,7 +11,7 @@ router = APIRouter()
 
 
 @router.get("/patient/{patient_idx}/twins", response_model=TwinsResponse)
-def get_patient_twins(patient_idx: int, state: AppState = None) -> dict:
+def get_patient_twins(patient_idx: int, state: AppState | None = None) -> dict:
     n = len(state.df_latent)
     if patient_idx < 0 or patient_idx >= n:
         raise HTTPException(status_code=404, detail="Patient index out of range")
