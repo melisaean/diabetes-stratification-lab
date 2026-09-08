@@ -5,7 +5,7 @@ from __future__ import annotations
 import numpy as np
 import pandas as pd
 import torch
-from fastapi import APIRouter
+from fastapi import APIRouter, Request
 
 from app.schemas import EncodeRequest, EncodeResponse
 from app.state import AppState
@@ -15,7 +15,8 @@ router = APIRouter()
 
 
 @router.post("/encode", response_model=EncodeResponse)
-def encode_patient(record: EncodeRequest, state: AppState | None = None) -> dict:
+def encode_patient(record: EncodeRequest, request: Request) -> dict:
+    state: AppState = request.app.state.state
     data = record.model_dump(exclude_none=True)
     df_raw = pd.DataFrame([data])
     X = state.artifacts.engineer.transform(df_raw)

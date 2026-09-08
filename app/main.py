@@ -47,7 +47,15 @@ def create_app(settings=None) -> FastAPI:
         twin_index = TwinIndex.from_fingerprints(latent_np, n_neighbors=s.n_twins, metric=s.twin_metric)
         persona_stats = compute_persona_stats(df_base, s)
         from app.routes.map import build_map_figure
-        state = AppState(df_base=df_base, df_latent=df_latent, projection=projection, twin_index=twin_index, artifacts=artifacts, persona_stats=persona_stats)
+
+        state = AppState(
+            df_base=df_base,
+            df_latent=df_latent,
+            projection=projection,
+            twin_index=twin_index,
+            artifacts=artifacts,
+            persona_stats=persona_stats,
+        )
         state.map_figure = build_map_figure(state)
         app.state.state = state
         print(f"Startup complete. {len(df_base)} patients loaded.")
@@ -59,30 +67,13 @@ def create_app(settings=None) -> FastAPI:
     app.include_router(twins.router)
     app.include_router(encode.router)
 
+    @app.get("/health")
+    def health() -> dict:
+        return {"status": "ok"}
+
     @app.get("/ui")
     def get_ui():
         return FileResponse(Path(__file__).parent / "static" / "index.html")
-
-    _orig_map = map.get_map
-    _orig_persona = persona.get_persona_summary
-    _orig_twins = twins.get_patient_twins
-    _orig_encode = encode.encode_patient
-
-    @app.get("/map")
-    def _map_route():
-        return _orig_map(state=app.state.state)
-
-    @app.get("/persona/{persona_id}")
-    def _persona_route(persona_id: int):
-        return _orig_persona(persona_id, state=app.state.state)
-
-    @app.get("/patient/{patient_idx}/twins")
-    def _twins_route(patient_idx: int):
-        return _orig_twins(patient_idx, state=app.state.state)
-
-    @app.post("/encode")
-    def _encode_route(record: encode.EncodeRequest):
-        return _orig_encode(record, state=app.state.state)
 
     return app
 

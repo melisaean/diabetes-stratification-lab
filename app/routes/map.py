@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 
 import plotly.express as px
-from fastapi import APIRouter
+from fastapi import APIRouter, Request
 
 from app.state import AppState
 
@@ -26,9 +26,10 @@ def build_map_figure(state: AppState) -> dict:
                      template=state.artifacts.settings.plotly_template)
     fig.update_traces(marker=dict(size=4, opacity=0.7))
     fig.update_layout(margin=dict(l=0, r=0, b=0, t=40))
-    return json.loads(fig.to_json())  # type: ignore[no-any-return]
+    return json.loads(fig.to_json())
 
 
 @router.get("/map")
-def get_map(state: AppState | None = None) -> dict:
+def get_map(request: Request) -> dict:
+    state: AppState = request.app.state.state
     return state.map_figure

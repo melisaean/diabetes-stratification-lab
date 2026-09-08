@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Request
 
 from app.schemas import TwinsResponse
 from app.state import AppState
@@ -11,7 +11,8 @@ router = APIRouter()
 
 
 @router.get("/patient/{patient_idx}/twins", response_model=TwinsResponse)
-def get_patient_twins(patient_idx: int, state: AppState | None = None) -> dict:
+def get_patient_twins(patient_idx: int, request: Request) -> dict:
+    state: AppState = request.app.state.state
     n = len(state.df_latent)
     if patient_idx < 0 or patient_idx >= n:
         raise HTTPException(status_code=404, detail="Patient index out of range")
