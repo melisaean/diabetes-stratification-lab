@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Diabetes Stratification Lab</title>
+    <script src="https://cdn.plot.ly/plotly-2.32.0.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #0d1117; color: #e6edf3; height: 100vh; overflow: hidden; }
+        #app { display: flex; height: 100vh; }
+        #sidebar { width: 340px; min-width: 340px; background: #161b22; border-right: 1px solid #30363d; display: flex; flex-direction: column; overflow-y: auto; }
+        #chart-container { flex: 1; height: 100vh; }
+        .section { padding: 20px; border-bottom: 1px solid #30363d; }
+        .section h3 { color: #58a6ff; font-size: 14px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px; }
+        .tabs { display: flex; border-bottom: 1px solid #30363d; }
+        .tab { flex: 1; padding: 10px; text-align: center; cursor: pointer; font-size: 13px; color: #8b949e; border-bottom: 2px solid transparent; transition: all 0.2s; }
+        .tab:hover { color: #e6edf3; }
+        .tab.active { color: #58a6ff; border-bottom-color: #58a6ff; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        .stat-row { display: flex; justify-content: space-between; padding: 8px 0; font-size: 14px; }
+        .stat-label { color: #8b949e; }
+        .stat-value { font-weight: 600; color: #e6edf3; }
+        .stat-risk { color: #f85149; }
+        .twin-card { background: #0d1117; border: 1px solid #30363d; border-radius: 8px; padding: 12px; margin-bottom: 8px; }
+        .twin-card .twin-header { display: flex; justify-content: space-between; margin-bottom: 6px; }
+        .twin-card .twin-age { font-weight: 600; }
+        .twin-card .twin-dist { color: #8b949e; font-size: 12px; }
+        .twin-card .twin-detail { color: #8b949e; font-size: 13px; }
+        .form-group { margin-bottom: 12px; }
+        .form-group label { display: block; font-size: 12px; color: #8b949e; margin-bottom: 4px; }
+        .form-group input, .form-group select { width: 100%; padding: 8px; background: #0d1117; border: 1px solid #30363d; border-radius: 6px; color: #e6edf3; font-size: 13px; }
+        .form-group input:focus, .form-group select:focus { border-color: #58a6ff; outline: none; }
+        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+        .btn { width: 100%; padding: 10px; background: #238636; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 14px; }
+        .btn:hover { background: #2ea043; }
+        .btn:disabled { background: #21262d; cursor: not-allowed; }
+        #loading { position: fixed; inset: 0; background: #0d1117; display: flex; align-items: center; justify-content: center; z-index: 100; }
+        #loading .spinner { width: 40px; height: 40px; border: 3px solid #30363d; border-top-color: #58a6ff; border-radius: 50%; animation: spin 1s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        #loading .text { margin-left: 16px; font-size: 16px; color: #8b949e; }
+        .error { color: #f85149; font-size: 13px; padding: 8px; background: #f8514922; border-radius: 6px; margin-top: 8px; }
+        @media (max-width: 768px) {
+            #sidebar { width: 100%; min-width: 100%; height: 50vh; border-right: none; border-bottom: 1px solid #30363d; }
+            #app { flex-direction: column; }
+            #chart-container { height: 50vh; }
+        }
+    </style>
+</head>
+<body>
+    <div id="loading"><div class="spinner"></div><div class="text">Loading Patient Clusters...</div></div>
+    <div id="app">
+        <div id="sidebar">
+            <div class="section"><h3>Diabetes Stratification Lab</h3><p style="font-size:13px;color:#8b949e;">Unsupervised patient persona discovery</p></div>
+            <div class="tabs">
+                <div class="tab active" data-tab="explore">Explore</div>
+                <div class="tab" data-tab="twins">Neural Twins</div>
+                <div class="tab" data-tab="encode">New Patient</div>
+            </div>
+            <div id="tab-explore" class="tab-content active">
+                <div class="section">
+                    <p style="font-size:13px;color:#8b949e;margin-bottom:12px;">Hover over a cluster to view stats</p>
+                    <div class="stat-row"><span class="stat-label">Persona</span><span class="stat-value" id="stat-persona">-</span></div>
+                    <div class="stat-row"><span class="stat-label">Avg Hospital Stay</span><span class="stat-value" id="stat-stay">-</span></div>
+                    <div class="stat-row"><span class="stat-label">Avg Medications</span><span class="stat-value" id="stat-meds">-</span></div>
+                    <div class="stat-row"><span class="stat-label">Avg Lab Procs</span><span class="stat-value" id="stat-labs">-</span></div>
+                    <div class="stat-row"><span class="stat-label">Readmission Risk (&lt;30d)</span><span class="stat-value stat-risk" id="stat-risk">-</span></div>
+                </div>
+            </div>
+            <div id="tab-twins" class="tab-content">
+                <div class="section">
+                    <p style="font-size:13px;color:#8b949e;margin-bottom:12px;">Click a patient on the map, then view their 5 most similar cases</p>
+                    <div id="twins-info"></div>
+                    <div id="twins-list"></div>
+                    <div id="twins-error"></div>
+                </div>
+            </div>
+            <div id="tab-encode" class="tab-content">
+                <div class="section">
+                    <p style="font-size:13px;color:#8b949e;margin-bottom:12px;">Enter a new patient record to predict their persona</p>
+                    <form id="encode-form">
+                        <div class="form-row">
+                            <div class="form-group"><label>Age</label><select id="f-age"><option>[0-10)</option><option>[10-20)</option><option>[20-30)</option><option>[30-40)</option><option>[40-50)</option><option selected>[50-60)</option><option>[60-70)</option><option>[70-80)</option><option>[80-90)</option><option>[90-100)</option></select></div>
+                            <div class="form-group"><label>Gender</label><select id="f-gender"><option>Female</option><option>Male</option></select></div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group"><label>Time in Hospital</label><input type="number" id="f-time" value="3" min="1" max="14"></div>
+                            <div class="form-group"><label>Num Medications</label><input type="number" id="f-meds" value="10" min="0" max="50"></div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group"><label>Num Lab Procs</label><input type="number" id="f-labs" value="40" min="0" max="150"></div>
+                            <div class="form-group"><label>Num Diagnoses</label><input type="number" id="f-diag" value="5" min="1" max="21"></div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group"><label>Primary Diagnosis</label><select id="f-diag1"><option>Circulatory</option><option>Diabetes</option><option>Respiratory</option><option>Digestive</option><option>Urogenital</option><option>Neoplasms</option><option>Musculoskeletal</option><option>Injury</option><option>Other</option></select></div>
+                            <div class="form-group"><label>Insulin</label><select id="f-insulin"><option>No</option><option>Down</option><option>Steady</option><option>Up</option></select></div>
+                        </div>
+                        <button type="submit" class="btn" id="encode-btn">Predict Persona</button>
+                    </form>
+                    <div id="encode-result" style="margin-top:12px;"></div>
+                    <div id="encode-error"></div>
+                </div>
+            </div>
+        </div>
+        <div id="chart-container"></div>
+    </div>
+    <script>
+        const API = '';
+        let currentPersona = null;
+        const personaStatsCache = {};
+        document.querySelectorAll('.tab').forEach(tab => { tab.addEventListener('click', () => { document.querySelectorAll('.tab').forEach(t => t.classList.remove('active')); document.querySelectorAll('.tab-content').forEach(tc => tc.classList.remove('active')); tab.classList.add('active'); document.getElementById('tab-' + tab.dataset.tab).classList.add('active'); }); });
+        fetch(API + '/map').then(res => res.json()).then(figure => { document.getElementById('loading').style.display = 'none'; Plotly.newPlot('chart-container', figure.data, figure.layout, { responsive: true, displaylogo: false }).then(gd => { gd.on('plotly_hover', data => { const id = data.points[0].fullData.name; updatePersonaStats(id); }); gd.on('plotly_click', data => { const p = data.points[0]; const idx = p.customdata ? p.customdata[p.customdata.length - 1] : p.pointIndex; if (idx !== undefined) loadTwins(idx); }); }); }).catch(err => { document.getElementById('loading').innerHTML = '<div class="error">Failed to load map.</div>'; });
+        function updatePersonaStats(id) { if (id === currentPersona) return; currentPersona = id; if (personaStatsCache[id]) { renderStats(personaStatsCache[id]); return; } fetch(API + '/persona/' + id).then(res => res.json()).then(data => { personaStatsCache[id] = data; renderStats(data); }).catch(err => console.error(err)); }
+        function renderStats(data) { document.getElementById('stat-persona').textContent = 'Persona ' + data.persona_id; document.getElementById('stat-stay').textContent = data.averages.time_in_hospital.toFixed(1) + ' days'; document.getElementById('stat-meds').textContent = Math.round(data.averages.num_medications); document.getElementById('stat-labs').textContent = Math.round(data.averages.num_lab_procedures); document.getElementById('stat-risk').textContent = data.readmission_risk + '%'; }
+        function loadTwins(idx) { document.querySelectorAll('.tab').forEach(t => t.classList.remove('active')); document.querySelectorAll('.tab-content').forEach(tc => tc.classList.remove('active')); document.querySelector('[data-tab="twins"]').classList.add('active'); document.getElementById('tab-twins').classList.add('active'); document.getElementById('twins-info').innerHTML = '<p style="font-size:13px;color:#8b949e;">Loading twins for patient ' + idx + '...</p>'; document.getElementById('twins-list').innerHTML = ''; document.getElementById('twins-error').innerHTML = ''; fetch(API + '/patient/' + idx + '/twins').then(res => res.json()).then(data => { let html = '<p style="font-size:13px;color:#8b949e;margin-bottom:12px;">5 nearest patients to #' + idx + '</p>'; data.neural_twins.forEach((twin, i) => { html += '<div class="twin-card"><div class="twin-header"><span class="twin-age">' + twin.age + '</span><span class="twin-dist">dist: ' + data.distances[i].toFixed(3) + '</span></div><div class="twin-detail">Diagnosis: ' + twin.diag_1 + ' | Stay: ' + twin.time_in_hospital + 'd | Persona: ' + twin.persona_id + '</div></div>'; }); document.getElementById('twins-info').innerHTML = ''; document.getElementById('twins-list').innerHTML = html; }).catch(err => { document.getElementById('twins-error').innerHTML = '<div class="error">Failed to load twins.</div>'; }); }
+        document.getElementById('encode-form').addEventListener('submit', function(e) { e.preventDefault(); const btn = document.getElementById('encode-btn'); btn.disabled = true; btn.textContent = 'Predicting...'; document.getElementById('encode-result').innerHTML = ''; document.getElementById('encode-error').innerHTML = ''; const record = { age: document.getElementById('f-age').value, gender: document.getElementById('f-gender').value, time_in_hospital: parseInt(document.getElementById('f-time').value), num_medications: parseInt(document.getElementById('f-meds').value), num_lab_procedures: parseInt(document.getElementById('f-labs').value), number_diagnoses: parseInt(document.getElementById('f-diag').value), diag_1: document.getElementById('f-diag1').value, insulin: document.getElementById('f-insulin').value }; fetch(API + '/encode', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(record) }).then(res => res.json()).then(data => { if (data.detail) throw new Error(data.detail); let html = '<div class="twin-card"><div class="twin-header"><span class="twin-age">Persona ' + data.persona_id + '</span><span class="twin-dist stat-risk">' + data.readmission_risk + '% risk</span></div><div class="twin-detail">Stay: ' + data.averages.time_in_hospital.toFixed(1) + 'd | Meds: ' + Math.round(data.averages.num_medications) + ' | Labs: ' + Math.round(data.averages.num_lab_procedures) + '</div></div>'; html += '<p style="font-size:12px;color:#8b949e;margin-top:8px;">Top Neural Twins:</p>'; data.neural_twins.slice(0, 3).forEach(twin => { html += '<div class="twin-card" style="padding:8px;"><div class="twin-detail">' + twin.age + ' | ' + twin.diag_1 + ' | Stay: ' + twin.time_in_hospital + 'd | Persona: ' + twin.persona_id + '</div></div>'; }); document.getElementById('encode-result').innerHTML = html; btn.disabled = false; btn.textContent = 'Predict Persona'; }).catch(err => { document.getElementById('encode-error').innerHTML = '<div class="error">' + err.message + '</div>'; btn.disabled = false; btn.textContent = 'Predict Persona'; }); });
+    </script>
+</body>
+</html>
