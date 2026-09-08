@@ -2,12 +2,15 @@
 
 from __future__ import annotations
 
-from pathlib import Path
 from contextlib import asynccontextmanager
+from pathlib import Path
+
+import pandas as pd
 from fastapi import FastAPI
 from fastapi.responses import FileResponse
+
+from app.routes import encode, map, persona, twins
 from app.state import AppState
-from app.routes import map, persona, twins, encode
 from personas.artifacts import load_artifacts
 from personas.clustering import TwinIndex
 from personas.config import Settings

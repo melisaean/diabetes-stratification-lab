@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from fastapi import APIRouter, HTTPException
+
 from app.schemas import PersonaSummary
 from app.state import AppState
 

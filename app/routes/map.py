@@ -3,8 +3,10 @@
 from __future__ import annotations
 
 import json
+
 import plotly.express as px
 from fastapi import APIRouter
+
 from app.state import AppState
 
 router = APIRouter()

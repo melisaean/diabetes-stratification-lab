@@ -2,15 +2,13 @@
 
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional
-
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 
 
 class PersonaSummary(BaseModel):
     persona_id: int
     n_patients: int
-    averages: Dict[str, float]
+    averages: dict[str, float]
     readmission_risk: float
 
 
@@ -23,14 +21,14 @@ class TwinResult(BaseModel):
 
 class TwinsResponse(BaseModel):
     target_index: int
-    neural_twins: List[TwinResult]
-    distances: List[float]
+    neural_twins: list[TwinResult]
+    distances: list[float]
 
 
 class EncodeRequest(BaseModel):
     model_config = {"extra": "allow"}
-    encounter_id: Optional[int] = None
-    patient_nbr: Optional[int] = None
+    encounter_id: int | None = None
+    patient_nbr: int | None = None
     race: str = "Caucasian"
     gender: str = "Female"
     age: str = "[50-60)"
@@ -58,6 +56,6 @@ class EncodeRequest(BaseModel):
 class EncodeResponse(BaseModel):
     persona_id: int
     readmission_risk: float
-    averages: Dict[str, float]
-    neural_twins: List[TwinResult]
-    distances: List[float]
+    averages: dict[str, float]
+    neural_twins: list[TwinResult]
+    distances: list[float]

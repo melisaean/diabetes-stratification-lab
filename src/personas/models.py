@@ -2,33 +2,23 @@
 
 from __future__ import annotations
 
+from pathlib import Path
+
 import numpy as np
 import torch
 import torch.nn as nn
-from pathlib import Path
-from typing import Tuple
 
 from personas.config import Settings
 
 
 class MedicalAutoencoder(nn.Module):
-    """Symmetric encoder-decoder: input_dim → 32 → 16 → latent_dim → 16 → 32 → input_dim."""
-
-    def __init__(self, input_dim: int, latent_dim: int = 8, hidden: Tuple[int, int] = (32, 16)) -> None:
+    def __init__(self, input_dim: int, latent_dim: int = 8, hidden: tuple[int, int] = (32, 16)) -> None:
         super().__init__()
         h1, h2 = hidden
-        self.encoder = nn.Sequential(
-            nn.Linear(input_dim, h1), nn.ReLU(),
-            nn.Linear(h1, h2), nn.ReLU(),
-            nn.Linear(h2, latent_dim),
-        )
-        self.decoder = nn.Sequential(
-            nn.Linear(latent_dim, h2), nn.ReLU(),
-            nn.Linear(h2, h1), nn.ReLU(),
-            nn.Linear(h1, input_dim), nn.Sigmoid(),
-        )
+        self.encoder = nn.Sequential(nn.Linear(input_dim, h1), nn.ReLU(), nn.Linear(h1, h2), nn.ReLU(), nn.Linear(h2, latent_dim))
+        self.decoder = nn.Sequential(nn.Linear(latent_dim, h2), nn.ReLU(), nn.Linear(h2, h1), nn.ReLU(), nn.Linear(h1, input_dim), nn.Sigmoid())
 
-    def forward(self, x: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
+    def forward(self, x: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
         latent = self.encoder(x)
         reconstruction = self.decoder(latent)
         return reconstruction, latent
@@ -44,31 +34,28 @@ class MedicalAutoencoder(nn.Module):
         torch.save(self.state_dict(), path)
 
     @classmethod
-    def load(cls, path: Path, input_dim: int, latent_dim: int = 8, hidden: Tuple[int, int] = (32, 16)) -> MedicalAutoencoder:
+    def load(cls, path: Path, input_dim: int, latent_dim: int = 8, hidden: tuple[int, int] = (32, 16)) -> MedicalAutoencoder:
         model = cls(input_dim=input_dim, latent_dim=latent_dim, hidden=hidden)
         model.load_state_dict(torch.load(path, weights_only=True))
         return model
 
 
-def train_autoencoder(X_train: np.ndarray, X_val: np.ndarray, settings: Settings, device: str | None = None) -> Tuple[MedicalAutoencoder, dict]:
+def train_autoencoder(X_train: np.ndarray, X_val: np.ndarray, settings: Settings, device: str | None = None) -> tuple[MedicalAutoencoder, dict]:
     if device is None:
         device = "mps" if torch.backends.mps.is_available() else "cpu"
     dev = torch.device(device)
     torch.manual_seed(settings.seed)
     np.random.seed(settings.seed)
-
     model = MedicalAutoencoder(input_dim=X_train.shape[1], latent_dim=settings.latent_dim, hidden=settings.hidden_dims).to(dev)
     criterion = nn.MSELoss()
     optimizer = torch.optim.Adam(model.parameters(), lr=settings.learning_rate)
     X_train_t = torch.tensor(X_train, dtype=torch.float32).to(dev)
     X_val_t = torch.tensor(X_val, dtype=torch.float32).to(dev)
-
     history: dict = {"train_loss": [], "val_loss": []}
     best_val = float("inf")
     patience_counter = 0
     best_state = None
-
-    for epoch in range(settings.epochs):
+    for _epoch in range(settings.epochs):
         model.train()
         perm = torch.randperm(X_train_t.size(0))
         epoch_loss = 0.0

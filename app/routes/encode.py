@@ -6,6 +6,7 @@ import numpy as np
 import pandas as pd
 import torch
 from fastapi import APIRouter
+
 from app.schemas import EncodeRequest, EncodeResponse
 from app.state import AppState
 from personas.clustering import TwinIndex

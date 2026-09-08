@@ -3,7 +3,8 @@
 from __future__ import annotations
 
 from fastapi import APIRouter, HTTPException
-from app.schemas import TwinsResponse, TwinResult
+
+from app.schemas import TwinsResponse
 from app.state import AppState
 
 router = APIRouter()

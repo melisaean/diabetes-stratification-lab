@@ -4,36 +4,25 @@ from __future__ import annotations
 
 import pickle
 from pathlib import Path
-from typing import Any, Dict, List
 
-import numpy as np
 import pandas as pd
 from sklearn.preprocessing import MinMaxScaler
 
 from personas.config import Settings
 
 
-# ── ICD-9 mapping ──────────────────────────────────────────────────────────
-
-
 def map_icd9(code: object) -> str:
-    """Collapse a granular ICD-9 code to one of 9 clinical categories."""
     if pd.isnull(code):
         return "Other"
-
     val = str(code).strip()
-
     if val.startswith(("V", "E")):
         return "Other"
-
     if val.startswith("250"):
         return "Diabetes"
-
     try:
         num = float(val)
     except ValueError:
         return "Other"
-
     if 390 <= num <= 459 or num == 785:
         return "Circulatory"
     if 460 <= num <= 519 or num == 786:
@@ -48,22 +37,16 @@ def map_icd9(code: object) -> str:
         return "Musculoskeletal"
     if 800 <= num <= 999:
         return "Injury"
-
     return "Other"
 
 
-# ── FeatureEngineer ────────────────────────────────────────────────────────
-
-
 class FeatureEngineer:
-    """End-to-end clinical feature encoder with fitted state persistence."""
-
     def __init__(self, settings: Settings) -> None:
         self.s = settings
-        self.feature_columns: List[str] = []
-        self._ordinal_maps: Dict[str, Dict[str, int]] = {}
-        self._nominal_encoders: Dict[str, Dict[str, int]] = {}
-        self._one_hot_columns: List[str] = []
+        self.feature_columns: list[str] = []
+        self._ordinal_maps: dict[str, dict[str, int]] = {}
+        self._nominal_encoders: dict[str, dict[str, int]] = {}
+        self._one_hot_columns: list[str] = []
         self._scaler: MinMaxScaler = MinMaxScaler()
 
     def fit(self, df: pd.DataFrame) -> FeatureEngineer:
@@ -71,7 +54,6 @@ class FeatureEngineer:
         df = self._filter_gender(df)
         df = self._drop_ids_and_target(df)
         df = self._map_icd9_columns(df)
-
         self._fit_ordinal("age", self.s.age_order, df)
         for col in self.s.med_dose_columns:
             if col in df.columns:
@@ -80,22 +62,14 @@ class FeatureEngineer:
             self._fit_ordinal("change", self.s.med_levels["change"], df)
         if "diabetesMed" in df.columns:
             self._fit_ordinal("diabetesMed", self.s.med_levels["diabetesMed"], df)
-
         for col in self.s.nominal_columns:
             if col in df.columns:
                 self._fit_frequency(col, df)
-
-        self.feature_columns = (
-            list(self.s.numeric_columns)
-            + list(self._ordinal_maps.keys())
-            + list(self._nominal_encoders.keys())
-        )
+        self.feature_columns = list(self.s.numeric_columns) + list(self._ordinal_maps.keys()) + list(self._nominal_encoders.keys())
         self.feature_columns = [c for c in self.feature_columns if c in df.columns]
-
         num_cols = [c for c in self.s.numeric_columns if c in df.columns]
         X_num = df[num_cols].values.astype(float)
         self._scaler.fit(X_num)
-
         return self
 
     def transform(self, df: pd.DataFrame) -> pd.DataFrame:
@@ -103,19 +77,15 @@ class FeatureEngineer:
         df = self._filter_gender(df)
         df = self._drop_ids_and_target(df)
         df = self._map_icd9_columns(df)
-
         for col, mapping in self._ordinal_maps.items():
             if col in df.columns:
                 df[col] = df[col].map(mapping).fillna(0).astype(int)
-
         for col, mapping in self._nominal_encoders.items():
             if col in df.columns:
                 df[col] = df[col].map(mapping).fillna(0).astype(int)
-
         num_cols = [c for c in self.s.numeric_columns if c in df.columns]
         X_num = df[num_cols].values.astype(float)
         df[num_cols] = self._scaler.transform(X_num)
-
         result = df[[c for c in self.feature_columns if c in df.columns]].copy()
         return result
 
@@ -124,20 +94,14 @@ class FeatureEngineer:
 
     def save(self, path: Path) -> None:
         path.parent.mkdir(parents=True, exist_ok=True)
-        state = {
-            "feature_columns": self.feature_columns,
-            "ordinal_maps": self._ordinal_maps,
-            "nominal_encoders": self._nominal_encoders,
-            "scaler": self._scaler,
-            "one_hot_columns": self._one_hot_columns,
-        }
+        state = {"feature_columns": self.feature_columns, "ordinal_maps": self._ordinal_maps, "nominal_encoders": self._nominal_encoders, "scaler": self._scaler, "one_hot_columns": self._one_hot_columns}
         with open(path, "wb") as f:
             pickle.dump(state, f)
 
     @classmethod
     def load(cls, path: Path) -> FeatureEngineer:
         with open(path, "rb") as f:
-            state = pickle.load(f)  # noqa: S301
+            state = pickle.load(f)
         from personas.config import settings as default_settings
         obj = cls(default_settings)
         obj.feature_columns = state["feature_columns"]

@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Dict
 
 import numpy as np
 import pandas as pd
@@ -17,7 +16,7 @@ class DataLoader:
     def __init__(self, settings: Settings) -> None:
         self.s = settings
         self.df: pd.DataFrame | None = None
-        self.mappings: Dict[str, pd.DataFrame] = {}
+        self.mappings: dict[str, pd.DataFrame] = {}
 
     def load_data(self) -> pd.DataFrame:
         path = self.s.raw_dir / "diabetic_data.csv"
@@ -27,7 +26,7 @@ class DataLoader:
         self.df.replace("?", np.nan, inplace=True)
         return self.df
 
-    def load_mappings(self) -> Dict[str, pd.DataFrame]:
+    def load_mappings(self) -> dict[str, pd.DataFrame]:
         path = self.s.raw_dir / "IDS_mapping.csv"
         if not path.exists():
             raise FileNotFoundError(f"Mapping file not found at {path}")
