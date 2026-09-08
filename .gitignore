@@ -1,0 +1,37 @@
+# --- Python / Jupyter ---
+__pycache__/
+*.py[cod]
+*$py.class
+.ipynb_checkpoints/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.virtualenv/
+.venv/
+venv/
+env/
+
+# --- Data (raw data is large; fetch via `make data`) ---
+data/raw/*.csv
+data/processed/diabetic_features_scaled.csv
+
+# --- IDEs / OS ---
+.vscode/
+.idea/
+.DS_Store
+*.swp
+
+# --- Large Model Files ---
+models/*.pkl
+models/*.joblib
+models/*.pth
+
+# --- Environments ---
+.env
+.python-version
+
+# --- Docker ---
+docker-compose.override.yml
+
+# --- Outputs (regenerable) ---
+outputs/evaluation/
