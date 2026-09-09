@@ -26,7 +26,8 @@ class MedicalAutoencoder(nn.Module):
     @torch.no_grad()
     def fingerprints(self, x: torch.Tensor) -> np.ndarray:
         self.eval()
-        _, latent = self(x)
+        device = next(self.parameters()).device
+        _, latent = self(x.to(device))
         return latent.cpu().numpy()
 
     def save(self, path: Path) -> None:

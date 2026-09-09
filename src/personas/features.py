@@ -87,6 +87,7 @@ class FeatureEngineer:
         X_num = df[num_cols].values.astype(float)
         df[num_cols] = self._scaler.transform(X_num)
         result = df[[c for c in self.feature_columns if c in df.columns]].copy()
+        result = result.reindex(columns=self.feature_columns, fill_value=0)
         return result
 
     def fit_transform(self, df: pd.DataFrame) -> pd.DataFrame:

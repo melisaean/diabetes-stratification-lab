@@ -31,6 +31,7 @@ def save_artifacts(artifacts: ModelArtifacts, models_dir: Path) -> None:
     models_dir.mkdir(parents=True, exist_ok=True)
     artifacts.encoder.save(models_dir / "autoencoder.pt")
     artifacts.engineer.save(models_dir / "engineer.joblib")
+    artifacts.clusterer.save(models_dir / "clusterer.joblib")
     manifest = {
         "created_at": datetime.now(UTC).isoformat(),
         "input_dim": artifacts.input_dim,
@@ -56,7 +57,7 @@ def load_artifacts(models_dir: Path, settings_override: Settings | None = None) 
         hidden=s.hidden_dims,
     )
     engineer = FeatureEngineer.load(models_dir / "engineer.joblib")
-    clusterer = PatientClustering(n_clusters=s.n_clusters, random_state=s.seed, n_init=s.n_init)
+    clusterer = PatientClustering.load(models_dir / "clusterer.joblib")
     return ModelArtifacts(
         encoder=encoder,
         engineer=engineer,

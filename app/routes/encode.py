@@ -21,10 +21,7 @@ def encode_patient(record: EncodeRequest, request: Request) -> dict:
     df_raw = pd.DataFrame([data])
     X = state.artifacts.engineer.transform(df_raw)
     X_tensor = torch.tensor(X.values, dtype=torch.float32)
-    state.artifacts.encoder.eval()
-    with torch.no_grad():
-        _, latent = state.artifacts.encoder(X_tensor)
-    latent_np = latent.numpy()
+    latent_np = state.artifacts.encoder.fingerprints(X_tensor)
     persona_id = int(state.artifacts.clusterer.predict(latent_np)[0])
     full_latent = np.vstack([state.df_latent.values, latent_np])
     new_idx = len(full_latent) - 1

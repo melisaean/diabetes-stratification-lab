@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+import pickle
+from pathlib import Path
+
 import numpy as np
 from sklearn.cluster import KMeans
 from sklearn.neighbors import NearestNeighbors
@@ -19,6 +22,16 @@ class PatientClustering:
 
     def predict(self, latent: np.ndarray) -> np.ndarray:
         return self.kmeans.predict(latent)
+
+    def save(self, path: Path) -> None:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        with open(path, "wb") as f:
+            pickle.dump(self, f)
+
+    @classmethod
+    def load(cls, path: Path) -> PatientClustering:
+        with open(path, "rb") as f:
+            return pickle.load(f)
 
 
 class TwinIndex:
