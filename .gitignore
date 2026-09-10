@@ -13,7 +13,13 @@ env/
 
 # --- Data (raw data is large; fetch via `make data`) ---
 data/raw/*.csv
-data/processed/diabetic_features_scaled.csv
+# Processed data + model artefacts are regenerable via `make data && make pipeline`
+data/processed/*.csv
+data/processed/*.parquet
+outputs/models/
+outputs/figures/
+outputs/evaluation/
+outputs/reports/
 
 # --- IDEs / OS ---
 .vscode/
@@ -22,16 +28,15 @@ data/processed/diabetic_features_scaled.csv
 *.swp
 
 # --- Large Model Files ---
-models/*.pkl
-models/*.joblib
-models/*.pth
+*.pkl
+*.joblib
+*.pth
+*.pt
 
 # --- Environments ---
 .env
 .python-version
+venv313/
 
 # --- Docker ---
 docker-compose.override.yml
-
-# --- Outputs (regenerable) ---
-outputs/evaluation/
