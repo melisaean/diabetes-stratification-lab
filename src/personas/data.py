@@ -49,3 +49,8 @@ class DataLoader:
         if self.df is not None:
             output_path.parent.mkdir(parents=True, exist_ok=True)
             self.df.to_csv(output_path, index=False)
+
+
+def align_base_frame(df: pd.DataFrame, settings: Settings) -> pd.DataFrame:
+    """Gender-filtered frame aligned with the engineered matrix (FeatureEngineer drops Unknown/Invalid rows)."""
+    return df[df["gender"] != settings.unknown_gender].reset_index(drop=True)

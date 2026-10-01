@@ -13,7 +13,7 @@ from sklearn.model_selection import train_test_split
 from personas.artifacts import ModelArtifacts, save_artifacts
 from personas.clustering import PatientClustering
 from personas.config import Settings
-from personas.data import DataLoader
+from personas.data import DataLoader, align_base_frame
 from personas.dimensionality import DimensionalityReducer
 from personas.features import FeatureEngineer
 from personas.models import train_autoencoder
@@ -39,7 +39,8 @@ def run_pipeline(settings: Settings, device: str | None = None) -> dict[str, Pat
     X_full = engineer.transform(df_raw)
     feature_columns = list(X_full.columns)
     print(f"Feature matrix: {X_full.shape[0]} patients x {X_full.shape[1]} features")
-    df_base = df_base.iloc[:len(X_full)].reset_index(drop=True)
+    df_base = align_base_frame(df_raw, settings)
+    assert len(df_base) == len(X_full), f"Base frame ({len(df_base)}) misaligned with features ({len(X_full)})"
     X_full.to_csv(proc_dir / "diabetic_features_scaled.csv", index=False)
     X_np = X_full.values.astype(np.float32)
     X_train, X_val = train_test_split(X_np, test_size=settings.val_split, random_state=settings.seed)
